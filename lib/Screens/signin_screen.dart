@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_course_app/Screens/forget_password_screen.dart';
 import 'package:flutter_course_app/Screens/signup_screen.dart';
 import 'package:flutter_course_app/Services/AuthServices/auth_services.dart';
+import 'package:page_transition/page_transition.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -81,13 +83,24 @@ class _SigninScreenState extends State<SigninScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    'Forgot Password?',
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 14,
-                      decorationColor: Colors.amber,
-                      fontWeight: FontWeight.w700,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageTransition(
+                          child: ForgetPasswordScreen(),
+                          type: PageTransitionType.fade,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 14,
+                        decorationColor: Colors.amber,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],

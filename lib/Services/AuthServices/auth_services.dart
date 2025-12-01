@@ -1,4 +1,6 @@
+// import 'dart:developer';
 import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -55,7 +57,7 @@ class AuthServices {
       log(userCredential.toString());
       return null;
     } catch (e) {
-      log('Googl Sign-In Error: $e');
+      log('Google Sign-In Error: $e');
       return null;
     }
   }
@@ -77,5 +79,17 @@ class AuthServices {
       duration: const Duration(seconds: 3),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  static Future<void> resetForgetPasswordsendEmail(
+    String email,
+    BuildContext context,
+  ) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      showSnackBar('Reset password Email ', context);
+    } catch (e) {
+      showSnackBar('Error in reset Password ${e.toString()}', context);
+    }
   }
 }
