@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/create_poll_screen.dart';
 import 'package:page_transition/page_transition.dart';
@@ -10,6 +11,7 @@ class HomeShowPollScreen extends StatefulWidget {
 }
 
 class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
+  final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -44,13 +46,21 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            Navigator.push(
-              context,
-              PageTransition(
-                type: PageTransitionType.fade,
-                child: CreatePollScreen(),
-              ),
-            );
+            if (_currentUserId != null) {
+              Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.fade,
+                  child: CreatePollScreen(currentUserId: _currentUserId!),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please sign in to create a poll'),
+                ),
+              );
+            }
           },
           child: const Icon(Icons.add),
         ),
