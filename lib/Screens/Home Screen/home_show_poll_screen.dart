@@ -41,11 +41,7 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
           ),
         ),
         body: TabBarView(
-          children: [
-            _buildAllPolls(),
-            _buildPostedPolls(),
-            Container(child: Text('All Poll')),
-          ],
+          children: [_buildAllPolls(), _buildPostedPolls(), _buildVotedPolls()],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
@@ -97,7 +93,7 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
                 itemCount: polls.length,
                 itemBuilder: (context, index) {
                   final poll = polls[index];
-                  return _buildPollCard(poll);
+                  return _buildPollCard(poll, showUserVote: false);
                 },
               );
       },
@@ -130,14 +126,14 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
                 itemCount: polls.length,
                 itemBuilder: (context, index) {
                   final poll = polls[index];
-                  return _buildPollCard(poll);
+                  return _buildPollCard(poll, showUserVote: true);
                 },
               );
       },
     );
   }
 
-  Widget _buildPollCard(DocumentSnapshot poll) {
+  Widget _buildPollCard(DocumentSnapshot poll, {bool showUserVote = false}) {
     final data = poll.data() as Map<String, dynamic>;
     final options = data['options'] as List<dynamic>;
 
@@ -238,61 +234,134 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
                                 color: Colors.orange,
                                 backgroundColor: Colors.grey[300],
                               ),
+                              if (showUserVote &&
+                                  options[i]['voters'] != null &&
+                                  (options[i]['voters'] as List).contains(
+                                    _currentUserId,
+                                  ))
+                                Padding(
+                                  padding: EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'You voted',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orangeAccent,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 15),
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orangeAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        if (showUserVote)
+                          ElevatedButton(
+                            onPressed: () {
+                              handleVote(poll.id, i, context, _currentUserId!);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orangeAccent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
+                            child: Text(
+                              'Vote',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            'Vote',
-                            style: TextStyle(fontSize: 14, color: Colors.white),
-                          ),
-                        ),
                       ],
                     ),
                   ),
               ],
               SizedBox(height: 5),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditPollScreen(poll: poll),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.edit, color: Colors.orange),
-                    label: Text('Edit', style: TextStyle(color: Colors.orange)),
-                  ),
-                  SizedBox(width: 5),
-                  TextButton.icon(
-                    onPressed: () {
-                      deletePoll(poll.id, context);
-                    },
-                    icon: Icon(Icons.delete, color: Colors.red),
-                    label: Text('Delete', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
+              if (!showUserVote)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditPollScreen(poll: poll),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.edit, color: Colors.orange),
+                      label: Text(
+                        'Edit',
+                        style: TextStyle(color: Colors.orange),
+                      ),
+                    ),
+                    SizedBox(width: 5),
+                    TextButton.icon(
+                      onPressed: () {
+                        deletePoll(poll.id, context);
+                      },
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      label: Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildVotedPolls() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('polls').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.amber),
+          );
+        }
+        final polls = snapshot.data!.docs;
+
+        final votedPolls = polls.where((poll) {
+          final options = poll['options'] as List<dynamic>;
+          // Check if the current user is in any of the 'voters' list
+          for (var option in options) {
+            if (option['voters'] != null &&
+                (option['voters'] as List).contains(_currentUserId)) {
+              return true;
+            }
+          }
+          return false;
+        }).toList();
+        return votedPolls.isEmpty
+            ? const Center(
+                child: Text(
+                  'No Voted Poll Available',
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )
+            : ListView.builder(
+                itemCount: votedPolls.length,
+                itemBuilder: (context, index) {
+                  final poll = votedPolls[index];
+                  return _buildPollCard(poll, showUserVote: true);
+                },
+              );
+      },
     );
   }
 
@@ -332,6 +401,50 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error deleting poll $e')));
+    }
+  }
+
+  Future<void> handleVote(
+    String pollId,
+    int optionIndex,
+    BuildContext context,
+    String currentUserId,
+  ) async {
+    try {
+      final pollDoc = FirebaseFirestore.instance
+          .collection('polls')
+          .doc(pollId);
+      final pollSnapshot = await pollDoc.get();
+      if (pollSnapshot.exists) {
+        final data = pollSnapshot.data() as Map<String, dynamic>;
+        final totalVotes = data['total_votes'];
+        final options = data['options'] as List<dynamic>;
+
+        for (var option in options) {
+          if (option['voters'] != null &&
+              (option['voters'] as List).contains(currentUserId)) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('You have already voted')));
+            return;
+          }
+        }
+        final voters = options[optionIndex]['voters'] ?? [];
+        voters.add(currentUserId);
+        options[optionIndex]['voters'] = voters;
+
+        options[optionIndex]['votes'] =
+            (options[optionIndex]['votes'] ?? 0) + 1;
+        await pollDoc.update({'options': options});
+        await pollDoc.update({'total_votes': totalVotes + 1});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Vote submitted successfully!!')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to submit vote')));
     }
   }
 }
