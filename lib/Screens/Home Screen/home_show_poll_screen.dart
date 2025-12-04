@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/create_poll_screen.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/edit_poll_screen.dart';
@@ -280,7 +281,9 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
                   ),
                   SizedBox(width: 5),
                   TextButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      deletePoll(poll.id, context);
+                    },
                     icon: Icon(Icons.delete, color: Colors.red),
                     label: Text('Delete', style: TextStyle(color: Colors.red)),
                   ),
@@ -291,5 +294,44 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> deletePoll(String pollId, BuildContext context) async {
+    try {
+      DocumentSnapshot pollDoc = await FirebaseFirestore.instance
+          .collection('polls')
+          .doc(pollId)
+          .get();
+      if (pollDoc.exists) {
+        List<dynamic> options = pollDoc['options'] ?? [];
+        for (var option in options) {
+          if (option['imageUrl'] != null) {
+            String imageUrl = option['imageUrl'];
+            String? filepath = Uri.decodeFull(
+              Uri.parse(imageUrl).pathSegments.lastWhere(
+                (element) => element.contains('poll'),
+                orElse: () => '',
+              ),
+            );
+            if (filepath != null && filepath.isNotEmpty) {
+              await FirebaseStorage.instance.ref(filepath).delete();
+            }
+          }
+        }
+        await FirebaseFirestore.instance
+            .collection('polls')
+            .doc(pollId)
+            .delete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Poll and associated images deleted successfully'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting poll $e')));
+    }
   }
 }
