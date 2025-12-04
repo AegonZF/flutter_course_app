@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/create_poll_screen.dart';
+import 'package:flutter_course_app/Screens/Home%20Screen/edit_poll_screen.dart';
 import 'package:page_transition/page_transition.dart';
 
 class HomeShowPollScreen extends StatefulWidget {
@@ -261,6 +262,30 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
                     ),
                   ),
               ],
+              SizedBox(height: 5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditPollScreen(poll: poll),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.edit, color: Colors.orange),
+                    label: Text('Edit', style: TextStyle(color: Colors.orange)),
+                  ),
+                  SizedBox(width: 5),
+                  TextButton.icon(
+                    onPressed: () {},
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    label: Text('Delete', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
