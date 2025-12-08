@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/home_show_poll_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:page_transition/page_transition.dart';
@@ -101,6 +102,15 @@ class AuthServices {
       showSnackBar('Reset password Email ', context);
     } catch (e) {
       showSnackBar('Error in reset Password ${e.toString()}', context);
+    }
+  }
+
+  static Future<bool> userLogin() async {
+    final User? user = await FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      return true;
+    } else {
+      return false;
     }
   }
 }

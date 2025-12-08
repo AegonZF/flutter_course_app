@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/create_poll_screen.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/edit_poll_screen.dart';
+import 'package:flutter_course_app/Screens/signin_screen.dart';
 import 'package:page_transition/page_transition.dart';
 
 class HomeShowPollScreen extends StatefulWidget {
@@ -23,7 +24,18 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
         appBar: AppBar(
           title: const Text('Create Poll'),
           centerTitle: true,
-          actions: [IconButton(onPressed: () {}, icon: Icon(Icons.settings))],
+          actions: [
+            IconButton(
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => SigninScreen()),
+                );
+              },
+              icon: Icon(Icons.settings),
+            ),
+          ],
           bottom: const TabBar(
             indicatorSize: TabBarIndicatorSize.tab,
             indicatorColor: Colors.amberAccent,

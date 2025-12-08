@@ -29,7 +29,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 width: 200,
                 height: 200,
                 child: Image.asset(
-                  'assets/images/login_logo.png',
+                  'assets/images/login.png',
                   fit: BoxFit.cover,
                 ),
               ),
