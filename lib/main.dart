@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_course_app/Provider/auth_provider.dart';
+import 'package:flutter_course_app/Provider/poll_provider.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/create_poll_screen.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/home_show_poll_screen.dart';
 import 'package:flutter_course_app/Screens/Onboarding/splash_screen.dart';
@@ -21,7 +22,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => PollProvider()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Flutter Course App',
