@@ -99,25 +99,32 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
                     ),
                   ),
                 SizedBox(height: 15),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                  onPressed: () {
-                    pollProvider.checkSubmissionPossible(
-                      widget.currentUserId,
-                      context,
-                    );
-                  },
-                  child: Text(
-                    'Create Poll',
-                    style: TextStyle(fontSize: 14, color: Colors.white),
-                  ),
-                ),
+                pollProvider.loader
+                    ? Center(
+                        child: CircularProgressIndicator(color: Colors.amber),
+                      )
+                    : ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                        ),
+                        onPressed: () {
+                          pollProvider.checkSubmissionPossible(
+                            widget.currentUserId,
+                            context,
+                          );
+                        },
+                        child: Text(
+                          'Create Poll',
+                          style: TextStyle(fontSize: 14, color: Colors.white),
+                        ),
+                      ),
               ],
             ),
           ),

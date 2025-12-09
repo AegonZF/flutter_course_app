@@ -70,6 +70,7 @@ class PollProvider extends ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No internet. Poll saved locally')),
         );
+        Navigator.pop(context);
       } on Exception catch (_) {
         // TODO
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,6 +121,8 @@ class PollProvider extends ChangeNotifier {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Poll Created Successfully")));
+
+      Navigator.pop(context);
     } catch (e) {
       log('Error creating poll: $e');
       ScaffoldMessenger.of(

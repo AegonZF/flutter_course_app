@@ -121,7 +121,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    AuthServices.signInWithGoogle();
+                    await AuthServices.signInWithGoogle(context);
                   },
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 16),

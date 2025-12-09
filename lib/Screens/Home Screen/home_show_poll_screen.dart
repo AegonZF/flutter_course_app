@@ -59,15 +59,16 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
           children: [_buildAllPolls(), _buildPostedPolls(), _buildVotedPolls()],
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
+          onPressed: () async {
             if (_currentUserId != null) {
-              Navigator.push(
+              await Navigator.push(
                 context,
                 PageTransition(
                   type: PageTransitionType.fade,
                   child: CreatePollScreen(currentUserId: _currentUserId!),
                 ),
               );
+              setState(() {});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -488,6 +489,44 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
                   ),
                 );
               }),
+              SizedBox(height: 5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (!isLocal)
+                    TextButton.icon(
+                      onPressed: () async {
+                        final pollDoc = await FirebaseFirestore.instance
+                            .collection('polls')
+                            .doc(pollData['id'])
+                            .get();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditPollScreen(poll: pollDoc),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.edit, color: Colors.orange),
+                      label: Text(
+                        'Edit',
+                        style: TextStyle(color: Colors.orange),
+                      ),
+                    ),
+                  if (!isLocal) SizedBox(width: 5),
+                  TextButton.icon(
+                    onPressed: () {
+                      if (isLocal) {
+                        _deleteLocalPoll(pollData['id'], context);
+                      } else {
+                        deletePoll(pollData['id'], context);
+                      }
+                    },
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    label: Text('Delete', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
               if (isLocal)
                 Padding(
                   padding: EdgeInsets.only(top: 10),
@@ -505,6 +544,20 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _deleteLocalPoll(String pollId, BuildContext context) async {
+    try {
+      await DatabaseHelper().deleteLocalPoll(pollId);
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Local poll deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting local poll: $e')));
+    }
   }
 
   Widget _buildVotedPolls() {
@@ -582,6 +635,7 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
             content: Text('Poll and associated images deleted successfully'),
           ),
         );
+        setState(() {});
       }
     } catch (e) {
       ScaffoldMessenger.of(

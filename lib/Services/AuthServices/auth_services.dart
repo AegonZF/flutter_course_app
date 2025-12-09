@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/home_show_poll_screen.dart';
+import 'package:flutter_course_app/Screens/Onboarding/splash_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -43,11 +44,12 @@ class AuthServices {
     }
   }
 
-  static Future<Map<String, dynamic>?> signInWithGoogle() async {
+  static Future<void> signInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        return null;
+        showSnackBar('Google Sign-In cancelled', context);
+        return;
       }
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -57,11 +59,16 @@ class AuthServices {
       );
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithCredential(credential);
-      log(userCredential.toString());
-      return null;
+      log('Google Sign-In successful: ${userCredential.user?.email}');
+
+      Navigator.pushReplacement(
+        context,
+        PageTransition(type: PageTransitionType.fade, child: SplashScreen()),
+      );
+      showSnackBar('Signed in successfully!', context);
     } catch (e) {
       log('Google Sign-In Error: $e');
-      return null;
+      showSnackBar('Google Sign-In failed: ${e.toString()}', context);
     }
   }
 
@@ -74,10 +81,7 @@ class AuthServices {
     if (message == "Sign-In succesful!") {
       Navigator.push(
         context,
-        PageTransition(
-          type: PageTransitionType.fade,
-          child: HomeShowPollScreen(),
-        ),
+        PageTransition(type: PageTransitionType.fade, child: SplashScreen()),
       );
     }
     showSnackBar(message, context);
