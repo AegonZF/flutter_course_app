@@ -108,7 +108,10 @@ class _CreatePollScreenState extends State<CreatePollScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   ),
                   onPressed: () {
-                    pollProvider.submitPoll(widget.currentUserId, context);
+                    pollProvider.checkSubmissionPossible(
+                      widget.currentUserId,
+                      context,
+                    );
                   },
                   child: Text(
                     'Create Poll',

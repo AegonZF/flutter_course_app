@@ -1,9 +1,11 @@
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_course_app/helper/database_helper.dart';
 import 'package:image_picker/image_picker.dart';
 
 class PollProvider extends ChangeNotifier {
@@ -41,6 +43,33 @@ class PollProvider extends ChangeNotifier {
       optionNameControllers.add(TextEditingController(text: option['name']));
       existingImages!.add(option['imageUrl'] ?? '');
       optionImages.add(null);
+    }
+  }
+
+  Future<void> checkSubmissionPossible(
+    String creatorId,
+    BuildContext context,
+  ) async {
+    if (!validateForm(context)) return;
+    try {
+      final optionNames = optionNameControllers.map((e) => e.text).toList();
+      final optionFiles = optionImages;
+      await DatabaseHelper().insertPollWithFiles(
+        pollId: generateRandomId(),
+        title: titleController.text,
+        creatorId: creatorId,
+        createdAt: DateTime.now(),
+        optionNames: optionNames,
+        optionFiles: optionFiles,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No internet. Poll saved locally')),
+      );
+    } on Exception catch (_) {
+      // TODO
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save poll locally')),
+      );
     }
   }
 
@@ -164,5 +193,15 @@ class PollProvider extends ChangeNotifier {
       loader = false;
       notifyListeners();
     }
+  }
+
+  String generateRandomId([int length = 20]) {
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
+    final rand = math.Random.secure();
+    return List.generate(
+      length,
+      (index) => chars[rand.nextInt(chars.length)],
+    ).join();
   }
 }
