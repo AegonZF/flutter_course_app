@@ -1,3 +1,5 @@
+import 'dart:io' as io;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/create_poll_screen.dart';
 import 'package:flutter_course_app/Screens/Home%20Screen/edit_poll_screen.dart';
 import 'package:flutter_course_app/Screens/signin_screen.dart';
+import 'package:flutter_course_app/helper/database_helper.dart';
 import 'package:page_transition/page_transition.dart';
 
 class HomeShowPollScreen extends StatefulWidget {
@@ -80,36 +83,56 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
   }
 
   Widget _buildPostedPolls() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('polls')
-          .where('creatorId', isEqualTo: _currentUserId)
-          .snapshots(),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getPostedPolls(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(color: Colors.orange));
         }
-        final polls = snapshot.data!.docs;
-        return polls.isEmpty
-            ? Center(
-                child: Text(
-                  'No posted poll available',
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              )
-            : ListView.builder(
-                itemCount: polls.length,
-                itemBuilder: (context, index) {
-                  final poll = polls[index];
-                  return _buildPollCard(poll, showUserVote: false);
-                },
-              );
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Text(
+              'No posted poll available',
+              style: TextStyle(
+                color: Colors.orange,
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          );
+        }
+        final polls = snapshot.data!;
+        return ListView.builder(
+          itemCount: polls.length,
+          itemBuilder: (context, index) {
+            final poll = polls[index];
+            return _buildLocalPollCard(poll);
+          },
+        );
       },
     );
+  }
+
+  Future<List<Map<String, dynamic>>> _getPostedPolls() async {
+    final localPolls = await DatabaseHelper().getLocalPolls(_currentUserId!);
+    final onlineSnapshot = await FirebaseFirestore.instance
+        .collection('polls')
+        .where('creatorId', isEqualTo: _currentUserId)
+        .get();
+
+    final onlinePolls = onlineSnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      data['isLocal'] = false;
+      return data;
+    }).toList();
+
+    final localPollsFormatted = localPolls.map((poll) {
+      poll['isLocal'] = true;
+      return poll;
+    }).toList();
+
+    return [...localPollsFormatted, ...onlinePolls];
   }
 
   Widget _buildAllPolls() {
@@ -325,6 +348,157 @@ class _HomeShowPollScreenState extends State<HomeShowPollScreen> {
                       ),
                     ),
                   ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocalPollCard(Map<String, dynamic> pollData) {
+    final isLocal = pollData['isLocal'] ?? false;
+    final options = pollData['options'] as List<dynamic>;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              blurRadius: 10,
+              spreadRadius: 2,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      pollData['title'],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  if (isLocal)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Offline',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const Divider(
+                color: Colors.orangeAccent,
+                thickness: 1,
+                height: 20,
+              ),
+              SizedBox(height: 10),
+              ...List.generate(options.length, (i) {
+                final option = options[i];
+                final imageUrl = option['imageUrl'] as String?;
+
+                return Container(
+                  margin: EdgeInsets.only(bottom: 10),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      if (imageUrl != null && imageUrl.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: imageUrl.startsWith('http')
+                              ? Image.network(
+                                  imageUrl,
+                                  height: 50,
+                                  width: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.image_not_supported,
+                                      size: 50,
+                                      color: Colors.grey,
+                                    );
+                                  },
+                                )
+                              : Image.file(
+                                  io.File(imageUrl),
+                                  height: 50,
+                                  width: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.image_not_supported,
+                                      size: 50,
+                                      color: Colors.grey,
+                                    );
+                                  },
+                                ),
+                        )
+                      else
+                        Icon(Icons.image, size: 50, color: Colors.grey),
+                      SizedBox(width: 15),
+                      Expanded(
+                        child: Text(
+                          option['name'] ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              if (isLocal)
+                Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: Text(
+                    'This poll will be uploaded when you have internet connection',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 ),
             ],
           ),

@@ -58,7 +58,8 @@ class DatabaseHelper {
     await db.insert('polls', {
       'id': pollId,
       'title': title,
-      'creatorId': createdAt.millisecondsSinceEpoch,
+      'creatorId': creatorId,
+      'createdAt': createdAt.millisecondsSinceEpoch,
       'total_votes': 0,
       'status': 'add',
     });
@@ -71,5 +72,33 @@ class DatabaseHelper {
         'votes': 0,
       });
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getLocalPolls(String creatorId) async {
+    final db = await database;
+    final polls = await db.query(
+      'polls',
+      where: 'creatorId = ?',
+      whereArgs: [creatorId],
+    );
+
+    List<Map<String, dynamic>> pollsWithOptions = [];
+    for (var poll in polls) {
+      final options = await db.query(
+        'poll_options',
+        where: 'pollId = ?',
+        whereArgs: [poll['id']],
+      );
+
+      pollsWithOptions.add({...poll, 'options': options});
+    }
+
+    return pollsWithOptions;
+  }
+
+  Future<void> deleteLocalPoll(String pollId) async {
+    final db = await database;
+    await db.delete('polls', where: 'id = ?', whereArgs: [pollId]);
+    await db.delete('poll_options', where: 'pollId = ?', whereArgs: [pollId]);
   }
 }

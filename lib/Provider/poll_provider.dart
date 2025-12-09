@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_course_app/Services/connectivity_service.dart';
 import 'package:flutter_course_app/helper/database_helper.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -50,26 +51,31 @@ class PollProvider extends ChangeNotifier {
     String creatorId,
     BuildContext context,
   ) async {
-    if (!validateForm(context)) return;
-    try {
-      final optionNames = optionNameControllers.map((e) => e.text).toList();
-      final optionFiles = optionImages;
-      await DatabaseHelper().insertPollWithFiles(
-        pollId: generateRandomId(),
-        title: titleController.text,
-        creatorId: creatorId,
-        createdAt: DateTime.now(),
-        optionNames: optionNames,
-        optionFiles: optionFiles,
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No internet. Poll saved locally')),
-      );
-    } on Exception catch (_) {
-      // TODO
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to save poll locally')),
-      );
+    final isOnline = await ConnectivityService().checkNow();
+    if (isOnline) {
+      await submitPoll(creatorId, context);
+    } else {
+      if (!validateForm(context)) return;
+      try {
+        final optionNames = optionNameControllers.map((e) => e.text).toList();
+        final optionFiles = optionImages;
+        await DatabaseHelper().insertPollWithFiles(
+          pollId: generateRandomId(),
+          title: titleController.text,
+          creatorId: creatorId,
+          createdAt: DateTime.now(),
+          optionNames: optionNames,
+          optionFiles: optionFiles,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No internet. Poll saved locally')),
+        );
+      } on Exception catch (_) {
+        // TODO
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save poll locally')),
+        );
+      }
     }
   }
 
