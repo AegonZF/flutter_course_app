@@ -1,6 +1,6 @@
-# 📱 Flutter Course App
+# 📱 Flutter Poll App
 
-Welcome to the **Flutter Course App**! This repository contains a complete Flutter application built to demonstrate core development concepts, clean architecture, and backend integration.
+Welcome to the **Flutter POll App**! This repository contains a complete Flutter application built to demonstrate core development concepts, clean architecture, and backend integration.
 
 ## ✨ Features
 
